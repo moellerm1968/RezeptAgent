@@ -50,7 +50,7 @@ Der integrierte MCP-Server ermöglicht die Nutzung als Tool in Claude Desktop od
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/DEIN_USERNAME/RezeptAgent.git
+git clone https://github.com/moellerm1968/RezeptAgent.git
 cd RezeptAgent
 
 # 2. Konfigurationsdatei anlegen
@@ -72,7 +72,7 @@ docker compose down
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/DEIN_USERNAME/RezeptAgent.git
+git clone https://github.com/Dmoellerm1968/RezeptAgent.git
 cd RezeptAgent
 
 # 2. Abhängigkeiten installieren

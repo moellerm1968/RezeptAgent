@@ -1,0 +1,19 @@
+# Secrets — NEVER commit this file
+.env
+.env.local
+
+# Runtime data — kept local via Docker volume
+data/db.json
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json

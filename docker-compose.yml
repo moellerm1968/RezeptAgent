@@ -1,0 +1,14 @@
+services:
+  rezeptagent:
+    build: .
+    ports:
+      - "3270:3270"
+    env_file:
+      - .env
+    environment:
+      # Pfad zur Datenbank-Datei im Container (optional, Standard: ./data/db.json)
+      # DB_PATH: /app/data/db.json
+      DB_PATH: /app/data/db.json
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

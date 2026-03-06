@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>RezeptAgent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #2d6a4f;
+      --green-dark: #1f4f3a;
+      --green-light: #52b788;
+      --green-pale: #d8f3dc;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --red: #dc2626;
+      --radius: 14px;
+      --header-h: 56px;
+      --nav-h: 64px;
+    }
+
+    html, body { height: 100%; background: var(--bg); }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      max-width: 600px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--green);
+      color: #fff;
+      height: var(--header-h);
+      padding: 0 20px;
+      padding-top: env(safe-area-inset-top);
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; }
+
+    /* ── Scroll area ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
+    }
+
+    /* ── Bottom Nav ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 600px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+      z-index: 200;
+    }
+    .nav-btn {
+      flex: 1;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      transition: color 0.18s;
+      min-height: var(--nav-h);
+      font-family: inherit;
+    }
+    .nav-btn .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-btn.active { color: var(--green); }
+    .nav-btn.active .nav-icon { transform: scale(1.12); }
+
+    /* ── Section heading ── */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+    .section-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* ── Form inputs ── */
+    .input-group { margin-bottom: 14px; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    input[type=text], input[type=email] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.18s;
+      font-family: inherit;
+    }
+    input:focus { border-color: var(--green); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.18s, transform 0.1s;
+      font-family: inherit;
+      min-height: 48px;
+      width: 100%;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--green-dark); }
+    .btn-secondary { background: var(--green-pale); color: var(--green); }
+    .btn-secondary:hover:not(:disabled) { background: #c2e8ce; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .alert-error { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+    .alert-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner-green {
+      border-color: rgba(45,106,79,0.25);
+      border-top-color: var(--green);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Recipe result card ── */
+    .recipe-result {
+      background: var(--card);
+      border: 2px solid var(--green-light);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin: 14px 0 10px;
+    }
+    .recipe-result-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .recipe-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--green-pale);
+      color: var(--green-dark);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .recipe-link-btn:hover { background: #c2e8ce; }
+    .ingredient-section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .ingredient-list { list-style: none; }
+    .ingredient-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .ingredient-list li:last-child { border-bottom: none; }
+    .ingredient-num {
+      color: var(--green);
+      font-weight: 700;
+      font-size: 0.78rem;
+      min-width: 18px;
+      padding-top: 2px;
+    }
+    .email-btn-wrap { margin-top: 10px; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .filter-btn {
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: all 0.18s;
+    }
+    .filter-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+    /* ── History cards ── */
+    .history-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .history-card.blocked { opacity: 0.55; }
+    .hc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+    .hc-title { font-size: 0.95rem; font-weight: 600; line-height: 1.4; flex: 1; }
+    .hc-meta { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; }
+    .hc-link { color: var(--green); font-size: 0.82rem; font-weight: 600; text-decoration: none; }
+    .hc-link:hover { text-decoration: underline; }
+    .hc-rating-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin: 10px 0 6px; }
+
+    /* ── Rating grid ── */
+    .rating-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+    .rating-btn {
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 8px 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.3;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .rating-btn:hover:not(:disabled) { border-color: var(--green); background: var(--green-pale); }
+    .rating-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .r1, .r2 { color: #15803d; }
+    .r3, .r4 { color: #92400e; }
+    .r5, .r6 { color: var(--red); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-green { background: var(--green-pale); color: var(--green-dark); }
+    .badge-grey { background: #f3f4f6; color: var(--text-muted); }
+    .badge-red { background: #fef2f2; color: var(--red); }
+
+    /* ── SMTP status ── */
+    .smtp-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .smtp-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .smtp-dot.ok { background: #22c55e; }
+    .smtp-dot.no { background: var(--red); }
+    .smtp-text { font-size: 0.82rem; font-weight: 600; }
+    .smtp-text.ok { color: #15803d; }
+    .smtp-text.no { color: var(--red); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 52px 20px; color: var(--text-muted); }
+    .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; line-height: 1.7; }
+
+    /* ── Delete button ── */
+    .hc-delete-btn {
+      border: none; background: none; cursor: pointer;
+      font-size: 1rem; padding: 4px 6px; border-radius: 6px;
+      color: var(--text-muted); transition: color 0.15s, background 0.15s;
+      flex-shrink: 0; line-height: 1;
+    }
+    .hc-delete-btn:hover:not(:disabled) { color: var(--red); background: #fef2f2; }
+    .hc-delete-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🍽️ RezeptAgent</h1>
+  </header>
+
+  <!-- Content -->
+  <main class="main">
+
+    <!-- ══ Tab: Neues Rezept ═══════════════════════════════════════ -->
+    <template v-if="activeTab === 'generate'">
+      <p class="section-title">Neues Rezept</p>
+
+      <div class="input-group">
+        <label for="gen-prompt">Suchbegriff</label>
+        <input
+          id="gen-prompt"
+          v-model="genPrompt"
+          type="text"
+          placeholder="z.B. vegetarisch mit Nudeln"
+          @keyup.enter="!generating && generateRecipe()"
+        />
+        <p class="section-hint">Leer lassen, um den Standard-Prompt aus den Einstellungen zu verwenden.</p>
+      </div>
+
+      <button class="btn btn-primary" @click="generateRecipe" :disabled="generating">
+        <span v-if="generating" class="spinner"></span>
+        <span>{{ generating ? 'Suche läuft…' : 'Rezept generieren' }}</span>
+      </button>
+
+      <div v-if="genError" class="alert alert-error" style="margin-top:12px">{{ genError }}</div>
+
+      <template v-if="currentRecipe">
+        <div class="recipe-result">
+          <p class="recipe-result-title">{{ currentRecipe.title }}</p>
+          <a :href="currentRecipe.url" target="_blank" rel="noopener noreferrer" class="recipe-link-btn">
+            🔗 Zum Rezept öffnen ↗
+          </a>
+          <p class="ingredient-section-label">Einkaufsliste</p>
+          <ul class="ingredient-list">
+            <li v-for="(ing, i) in currentRecipe.ingredients" :key="i">
+              <span class="ingredient-num">{{ i + 1 }}</span>
+              <span>{{ ing }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="email-btn-wrap">
+          <button
+            class="btn btn-secondary"
+            @click="sendEmail(currentRecipe.id)"
+            :disabled="!canSendEmail || emailSending"
+          >
+            <span v-if="emailSending" class="spinner spinner-green"></span>
+            <span>{{ emailSending ? 'Sende…' : '📧 Per Mail senden' }}</span>
+          </button>
+          <p v-if="!smtpConfigured" class="section-hint" style="text-align:center;margin-top:6px">
+            SMTP nicht konfiguriert – Mail-Versand nicht verfügbar.
+          </p>
+          <p v-else-if="!userEmail" class="section-hint" style="text-align:center;margin-top:6px">
+            Keine E-Mail-Adresse hinterlegt (→ Einstellungen).
+          </p>
+        </div>
+
+        <div v-if="emailSuccess" class="alert alert-success" style="margin-top:10px">✅ {{ emailSuccess }}</div>
+        <div v-if="emailError" class="alert alert-error" style="margin-top:10px">{{ emailError }}</div>
+      </template>
+    </template>
+
+    <!-- ══ Tab: Historie ══════════════════════════════════════════ -->
+    <template v-if="activeTab === 'history'">
+      <p class="section-title">Rezept-Historie</p>
+
+      <div class="filter-bar">
+        <button
+          v-for="f in filters"
+          :key="f.key"
+          class="filter-btn"
+          :class="{ active: histFilter === f.key }"
+          @click="histFilter = f.key"
+        >{{ f.label }}</button>
+      </div>
+
+      <div v-if="histLoading" style="text-align:center;padding:40px;color:var(--text-muted)">
+        Lade…
+      </div>
+
+      <div v-else-if="filteredRecipes.length === 0" class="empty-state">
+        <div class="es-icon">📭</div>
+        <p>Keine Rezepte für diesen Filter.<br>Generiere dein erstes Rezept im Tab „Neu".</p>
+      </div>
+
+      <div
+        v-for="r in filteredRecipes"
+        :key="r.id"
+        class="history-card"
+        :class="{ blocked: r.blocked }"
+      >
+        <div class="hc-top">
+          <p class="hc-title">{{ r.title }}</p>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <span v-if="r.blocked" class="badge badge-red">Gesperrt</span>
+            <span v-else-if="r.rating" class="badge badge-green">Note {{ r.rating }}</span>
+            <span v-else class="badge badge-grey">Neu</span>
+            <button class="hc-delete-btn" @click="confirmDelete(r.id)" :disabled="deletingId === r.id" title="Eintrag löschen">🗑</button>
+          </div>
+        </div>
+        <p class="hc-meta">{{ r.searchedAt }} · {{ r.prompt }}</p>
+        <a :href="r.url" target="_blank" rel="noopener noreferrer" class="hc-link">🔗 Rezept ansehen</a>
+
+        <template v-if="!r.rating && !r.blocked">
+          <p class="hc-rating-label">Bewerten:</p>
+          <div class="rating-grid">
+            <button
+              v-for="n in 6"
+              :key="n"
+              class="rating-btn"
+              :class="`r${n}`"
+              :disabled="ratingId === r.id"
+              @click="rateRecipe(r.id, n)"
+            >{{ n }} – {{ GRADE_LABELS[n - 1] }}</button>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <!-- ══ Tab: Einstellungen ════════════════════════════════════ -->
+    <template v-if="activeTab === 'settings'">
+      <p class="section-title">Einstellungen</p>
+
+      <div class="card">
+        <div class="input-group">
+          <label for="cfg-email">E-Mail-Adresse</label>
+          <input id="cfg-email" v-model="cfgEmail" type="text" placeholder="deine@email.de" />
+          <p class="section-hint">Für den optionalen Rezeptversand per Mail.</p>
+        </div>
+        <div class="input-group" style="margin-bottom:0">
+          <label for="cfg-prompt">Standard-Suchbegriff</label>
+          <input id="cfg-prompt" v-model="cfgPrompt" type="text" placeholder="z.B. vegetarisch mit Reis" />
+          <p class="section-hint">Wird verwendet, wenn bei der Generierung kein eigener Begriff eingegeben wird.</p>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 16px">
+        <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted)">E-Mail-Versand</p>
+        <div class="smtp-row">
+          <span class="smtp-dot" :class="smtpConfigured ? 'ok' : 'no'"></span>
+          <span class="smtp-text" :class="smtpConfigured ? 'ok' : 'no'">
+            {{ smtpConfigured ? 'SMTP konfiguriert – Versand verfügbar' : 'SMTP nicht konfiguriert' }}
+          </span>
+        </div>
+        <p v-if="!smtpConfigured" class="section-hint" style="margin-top:6px">
+          Setze SMTP_HOST, SMTP_USER und SMTP_PASS in der .env, um den Mail-Versand zu aktivieren.
+        </p>
+      </div>
+
+      <div v-if="cfgError" class="alert alert-error">{{ cfgError }}</div>
+      <div v-if="cfgSuccess" class="alert alert-success">{{ cfgSuccess }}</div>
+
+      <button class="btn btn-primary" @click="saveConfig" :disabled="cfgSaving">
+        <span v-if="cfgSaving" class="spinner"></span>
+        <span>{{ cfgSaving ? 'Speichern…' : 'Einstellungen speichern' }}</span>
+      </button>
+    </template>
+
+  </main>
+
+  <!-- Bottom navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-btn" :class="{ active: activeTab === 'generate' }" @click="switchTab('generate')">
+      <span class="nav-icon">✨</span>
+      <span>Neu</span>
+    </button>
+    <button class="nav-btn" :class="{ active: activeTab === 'history' }" @click="switchTab('history')">
+      <span class="nav-icon">📋</span>
+      <span>Historie</span>
+    </button>
+    <button class="nav-btn" :class="{ active: activeTab === 'settings' }" @click="switchTab('settings')">
+      <span class="nav-icon">⚙️</span>
+      <span>Einstellungen</span>
+    </button>
+  </nav>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const GRADE_LABELS = ['Sehr gut', 'Gut', 'Befriedigend', 'Ausreichend', 'Mangelhaft', 'Ungenügend'];
+
+    const activeTab = ref('generate');
+
+    // ── Shared state ──────────────────────────────────────────────
+    const smtpConfigured = ref(false);
+    const userEmail = ref('');
+
+    // ── Generate tab ──────────────────────────────────────────────
+    const genPrompt = ref('');
+    const generating = ref(false);
+    const genError = ref('');
+    const currentRecipe = ref(null);
+    const emailSending = ref(false);
+    const emailSuccess = ref('');
+    const emailError = ref('');
+
+    const canSendEmail = computed(() => smtpConfigured.value && !!userEmail.value);
+
+    async function generateRecipe() {
+      genError.value = '';
+      emailSuccess.value = '';
+      emailError.value = '';
+      generating.value = true;
+      try {
+        const body = genPrompt.value.trim() ? { prompt: genPrompt.value.trim() } : {};
+        const r = await fetch('/api/recipes/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Unbekannter Fehler');
+        currentRecipe.value = data;
+      } catch (e) {
+        genError.value = e.message;
+      } finally {
+        generating.value = false;
+      }
+    }
+
+    async function sendEmail(recipeId) {
+      emailError.value = '';
+      emailSuccess.value = '';
+      emailSending.value = true;
+      try {
+        const r = await fetch(`/api/recipes/${recipeId}/send-email`, { method: 'POST' });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Fehler beim Senden');
+        emailSuccess.value = data.message || 'E-Mail gesendet!';
+      } catch (e) {
+        emailError.value = e.message;
+      } finally {
+        emailSending.value = false;
+      }
+    }
+
+    // ── History tab ───────────────────────────────────────────────
+    const recipes = ref([]);
+    const histLoading = ref(false);
+    const histFilter = ref('all');
+    const ratingId = ref(null);
+
+    const filters = [
+      { key: 'all', label: 'Alle' },
+      { key: 'unrated', label: 'Unbewertet' },
+      { key: 'rated', label: 'Bewertet' },
+      { key: 'blocked', label: 'Gesperrt' },
+    ];
+
+    const filteredRecipes = computed(() => {
+      if (histFilter.value === 'unrated') return recipes.value.filter(r => !r.rating && !r.blocked);
+      if (histFilter.value === 'rated')   return recipes.value.filter(r => !!r.rating && !r.blocked);
+      if (histFilter.value === 'blocked') return recipes.value.filter(r => r.blocked);
+      return recipes.value;
+    });
+
+    async function loadRecipes() {
+      histLoading.value = true;
+      try {
+        const r = await fetch('/api/recipes');
+        recipes.value = await r.json();
+      } catch (e) {
+        console.error('Rezepte laden fehlgeschlagen', e);
+      } finally {
+        histLoading.value = false;
+      }
+    }
+
+    async function rateRecipe(id, rating) {
+      ratingId.value = id;
+      try {
+        const r = await fetch(`/api/recipes/${id}/rating`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Fehler');
+        const idx = recipes.value.findIndex(rec => rec.id === id);
+        if (idx !== -1) recipes.value[idx] = data;
+      } catch (e) {
+        console.error('Bewertung fehlgeschlagen', e);
+      } finally {
+        ratingId.value = null;
+      }
+    }
+
+    const deletingId = ref(null);
+
+    async function confirmDelete(id) {
+      if (!confirm('Rezept wirklich löschen? Diese Aktion kann nicht rükgängig gemacht werden.')) return;
+      deletingId.value = id;
+      try {
+        const r = await fetch(`/api/recipes/${id}`, { method: 'DELETE' });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'Fehler beim Löschen'); }
+        recipes.value = recipes.value.filter(rec => rec.id !== id);
+      } catch (e) {
+        console.error('Löschen fehlgeschlagen', e);
+      } finally {
+        deletingId.value = null;
+      }
+    }
+
+    // ── Settings tab ──────────────────────────────────────────────
+    const cfgEmail = ref('');
+    const cfgPrompt = ref('');
+    const cfgError = ref('');
+    const cfgSuccess = ref('');
+    const cfgSaving = ref(false);
+
+    async function loadConfig() {
+      try {
+        const r = await fetch('/api/config');
+        const data = await r.json();
+        smtpConfigured.value = !!data.smtpConfigured;
+        userEmail.value = data.email || '';
+        cfgEmail.value = data.email || '';
+        cfgPrompt.value = data.recipePrompt || '';
+      } catch (e) {
+        console.error('Config laden fehlgeschlagen', e);
+      }
+    }
+
+    async function saveConfig() {
+      cfgError.value = '';
+      cfgSuccess.value = '';
+      cfgSaving.value = true;
+      try {
+        const r = await fetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cfgEmail.value, recipePrompt: cfgPrompt.value }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Fehler beim Speichern');
+        userEmail.value = data.email || '';
+        cfgSuccess.value = 'Einstellungen gespeichert!';
+        setTimeout(() => (cfgSuccess.value = ''), 3000);
+      } catch (e) {
+        cfgError.value = e.message;
+      } finally {
+        cfgSaving.value = false;
+      }
+    }
+
+    // ── Navigation ────────────────────────────────────────────────
+    function switchTab(tab) {
+      activeTab.value = tab;
+      if (tab === 'history') loadRecipes();
+      if (tab === 'settings') loadConfig();
+    }
+
+    onMounted(loadConfig);
+
+    return {
+      GRADE_LABELS, activeTab, switchTab,
+      smtpConfigured, userEmail,
+      genPrompt, generating, genError, currentRecipe, canSendEmail,
+      emailSending, emailSuccess, emailError, sendEmail, generateRecipe,
+      recipes, histLoading, histFilter, filteredRecipes, filters,
+      ratingId, rateRecipe, deletingId, confirmDelete,
+      cfgEmail, cfgPrompt, cfgError, cfgSuccess, cfgSaving, saveConfig,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
